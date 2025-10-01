@@ -2,47 +2,69 @@
 
 Implementación optimizada de softmax usando algoritmo CORDIC para integración con llama.cpp y posterior aceleración en FPGA.
 
-## 🎯 Objetivo del Proyecto
+## Estado del Proyecto
 
-Reemplazar la función softmax de llama.cpp con una implementación CORDIC optimizada que:
-1. **Fase 1 (Actual):** Funcione en CPU como referencia
-2. **Fase 2:** Se sintetice con Vivado HLS  
-3. **Fase 3:** Se acelere en FPGA
+**Fase 1: ✅ COMPLETADA** - Implementación CPU funcionando  
+**Fase 2: 🔄 EN PROGRESO** - Integración con llama.cpp  
+**Fase 3: ⏳ PENDIENTE** - Síntesis HLS  
+**Fase 4: ⏳ PENDIENTE** - Deployment FPGA
 
-## 📊 Estado del Proyecto
+---
 
-### ✅ Completado (Fase 1 - CPU)
-- [x] Sistema de build con CMake
-- [x] `cordic_types.h` - Tipos de datos y punto fijo Q3.12
-- [x] `cordic_preprocessor.h/.cpp` - Mapeo exponencial con ln(2)
-- [x] Tests automatizados con CTest
-- [x] Tests de tipos (passing ✓)
-- [x] Tests de preprocesador (passing ✓)
+## Resultados de Fase 1
 
-### 🔄 En Progreso
-- [ ] `cordic_iterator.h/.cpp` - Algoritmo CORDIC con selección greedy
-- [ ] `cordic_postprocessor.h/.cpp` - Cálculo final de exponenciales
-- [ ] `cordic_softmax.h/.cpp` - API principal
+### Métricas de Precisión
+- **Error CORDIC exp():** < 0.05%
+- **Identidad hiperbólica:** cosh² - sinh² = 1.0 (exacto)
+- **Tests pasados:** 5/5 (100%)
 
-### ⏳ Pendiente
-- [ ] Integración con llama.cpp
-- [ ] Benchmarks CPU (vs std::exp)
-- [ ] Validación de precisión
-- [ ] Migración a Vivado HLS
-- [ ] Deployment en FPGA
+### Rendimiento (macOS M1, 8 cores)
+| Vocabulario | Tiempo | MSE | Token Correcto |
+|-------------|--------|-----|----------------|
+| 100 tokens  | 66 μs  | 1.45e-11 | ✓ |
+| 1K tokens   | 594 μs | 1.13e-07 | ✓ |
+| 10K tokens  | 5.5 ms | 1.10e-06 | ✓ |
 
-## 🚀 Quick Start
+### Arquitectura Implementada
+
+┌─────────────────┐
+│ Preprocesador   │ → Mapeo exponencial: e^x = 2^n × e^(x')
+└────────┬────────┘
+         ↓
+┌─────────────────┐
+│ Iterador CORDIC │ → Rotaciones greedy (4-9 iteraciones)
+└────────┬────────┘
+         ↓ 
+┌─────────────────┐
+│ Postprocesador  │ → Cálculo: K = √(X²-Y²), e^x = cosh+sinh
+└────────┬────────┘
+         ↓
+┌─────────────────┐
+│ API Softmax     │ → Interfaz C/C++ para llama.cpp
+└─────────────────┘
+
+---
+
+## Quick Start
 
 ### Requisitos
 - CMake 3.15+
-- GCC 7+ o Clang 10+
+- GCC 7+ / Clang 10+ / AppleClang 11+
 - C++17
 
-### Build Automático (Recomendado)
+### Build y Test
 ```bash
-# Clonar repositorio
+# Clonar
 git clone https://github.com/andresc452/cordic-softmax-llama.git
 cd cordic-softmax-llama
 
-# Build y test en un comando
+# Build automático
 ./build.sh Release
+
+# Ejecutar todos los tests
+cd build
+ctest --output-on-failure
+
+# Test individual del softmax
+./test_softmax
+
