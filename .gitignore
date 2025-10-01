@@ -30,3 +30,17 @@ __pycache__/
 
 # Descarga de llama.cpp
 ../llama.cpp/
+
+# CMake
+CMakeCache.txt
+CMakeFiles/
+cmake_install.cmake
+Makefile
+*.cmake
+!CMakeLists.txt
+CTestTestfile.cmake
+Testing/
+
+# Build directories
+build/
+build-*/
