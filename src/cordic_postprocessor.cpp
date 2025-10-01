@@ -21,11 +21,12 @@ PostprocessResult CORDICPostprocessor::processResults(
                   << " iteraciones" << std::endl;
     }
     
-    // Paso 1: Calcular factor de escala K
-    result.scaling_factor = calculateScalingFactor(iteration_result.selected_angles);
+    // Usar K constante para CORDIC hiperbólico
+    result.scaling_factor = CORDICConfig::CORDIC_K_HYPERBOLIC;
     
     if (enable_debug) {
-        std::cout << "\nPaso 1: Factor de escala K = " << result.scaling_factor << std::endl;
+        std::cout << "\nPaso 1: Factor de escala K = " << result.scaling_factor 
+                  << " (constante CORDIC hiperbólico)" << std::endl;
         std::cout << "Ángulos utilizados: [";
         for (size_t i = 0; i < iteration_result.selected_angles.size(); i++) {
             std::cout << iteration_result.selected_angles[i];
@@ -48,7 +49,6 @@ PostprocessResult CORDICPostprocessor::processResults(
                   << result.cosh_value << std::endl;
         std::cout << "sinh(x') = " << result.sinh_value << std::endl;
         
-        // Verificar identidad hiperbólica: cosh² - sinh² = 1
         float identity_check = result.cosh_value * result.cosh_value - 
                               result.sinh_value * result.sinh_value;
         std::cout << "Verificación cosh² - sinh² = " << identity_check 
@@ -76,7 +76,7 @@ PostprocessResult CORDICPostprocessor::processResults(
         }
     }
     
-    // Paso 5: Calcular error para validación
+    // Paso 5: Calcular error
     result.relative_error = calculateError(result.exponential_value, 
                                           preprocess_result.original_input);
     
@@ -93,23 +93,9 @@ PostprocessResult CORDICPostprocessor::processResults(
 }
 
 float CORDICPostprocessor::calculateScalingFactor(const std::vector<int>& selected_angles) {
-    if (selected_angles.empty()) {
-        return 1.0f;
-    }
-    
-    // MÉTODO CORRECTO: Calcular K multiplicando cosh(α_i) 
-    // para CADA ángulo en la lista (incluyendo repeticiones)
-    float K = 1.0f;
-    
-    for (int angle_idx : selected_angles) {
-        float tanh_val = std::pow(2.0f, -angle_idx);
-        float angle = std::atanh(tanh_val);
-        float cosh_angle = std::cosh(angle);
-        
-        K *= cosh_angle;
-    }
-    
-    return K;
+    // Esta función ya no se usa, mantenida por compatibilidad
+    (void)selected_angles;  // Suprimir warning
+    return CORDICConfig::CORDIC_K_HYPERBOLIC;
 }
 
 void CORDICPostprocessor::extractHyperbolicFunctions(

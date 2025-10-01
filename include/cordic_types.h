@@ -3,9 +3,6 @@
  * @brief Tipos de datos fundamentales para CORDIC Softmax
  * 
  * Configuración: Q3.12 (16-bit fixed-point)
- * - 1 bit signo
- * - 3 bits enteros → rango [-8, +7.999]
- * - 12 bits fraccionales → resolución 0.000244
  */
 
 #ifndef CORDIC_TYPES_H
@@ -33,6 +30,10 @@ namespace CORDICConfig {
     constexpr double LN2 = 0.693147180559945;
     constexpr double INV_LN2 = 1.442695040888963;
     constexpr double CONVERGENCE_LIMIT = LN2 / 2.0;  // 0.347
+    
+    // NUEVO: Factor de escala K para CORDIC hiperbólico
+    // Para la secuencia completa con repeticiones: K ≈ 1.20749
+    constexpr double CORDIC_K_HYPERBOLIC = 1.20749640;
     
     // Rangos para softmax
     constexpr float SOFTMAX_MIN_LOGIT = -8.0f;
