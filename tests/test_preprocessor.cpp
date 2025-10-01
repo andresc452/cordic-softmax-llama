@@ -1,5 +1,5 @@
-#include "../include/cordic_types.h"
-#include "../include/cordic_preprocessor.h"
+#include "cordic_types.h"
+#include "cordic_preprocessor.h"
 #include <iostream>
 #include <iomanip>
 #include <cmath>

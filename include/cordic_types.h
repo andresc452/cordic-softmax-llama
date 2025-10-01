@@ -96,7 +96,7 @@ public:
         return result;
     }
     
-    bool operator>=(int zero) const { return value >= 0; }
+    bool operator>=(int) const { return value >= 0; }
     
     bool operator<(double threshold) const { 
         return std::abs(toDouble()) < threshold; 

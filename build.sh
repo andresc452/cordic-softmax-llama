@@ -1,9 +1,9 @@
 #!/bin/bash
-# Script de build automatizado
+# Script de build automatizado (compatible Linux/macOS)
 
 set -e  # Exit on error
 
-BUILD_TYPE=${1:-Release}  # Debug o Release
+BUILD_TYPE=${1:-Release}
 BUILD_DIR="build"
 
 echo "=========================================="
@@ -11,6 +11,17 @@ echo "CORDIC Softmax - Build Script"
 echo "=========================================="
 echo "Build type: $BUILD_TYPE"
 echo ""
+
+# Detectar número de cores (compatible macOS/Linux)
+if command -v nproc &> /dev/null; then
+    NPROC=$(nproc)
+elif command -v sysctl &> /dev/null; then
+    NPROC=$(sysctl -n hw.ncpu)
+else
+    NPROC=4
+fi
+
+echo "Usando $NPROC cores"
 
 # Limpiar build anterior si existe
 if [ -d "$BUILD_DIR" ]; then
@@ -30,7 +41,7 @@ cmake -DCMAKE_BUILD_TYPE=$BUILD_TYPE ..
 # Compilar
 echo ""
 echo "Compilando..."
-cmake --build . -j$(nproc)
+cmake --build . -j$NPROC
 
 # Ejecutar tests
 echo ""
@@ -46,3 +57,4 @@ echo ""
 echo "Para ejecutar tests individuales:"
 echo "  ./build/test_types"
 echo "  ./build/test_preprocessor"
+echo "  ./build/test_iterator"

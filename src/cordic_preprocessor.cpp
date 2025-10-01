@@ -3,7 +3,7 @@
  * @brief Implementación del preprocesador CORDIC
  */
 
-#include "../include/cordic_preprocessor.h"
+#include "cordic_preprocessor.h"
 #include <iostream>
 #include <iomanip>
 #include <cmath>
@@ -22,7 +22,6 @@ PreprocessResult CORDICPreprocessor::processInput(float input, bool enable_debug
         if (enable_debug) {
             std::cout << "⚠ Entrada fuera de rango válido, saturando..." << std::endl;
         }
-        // Saturar a límites seguros
         if (input < CORDICConfig::SOFTMAX_MIN_LOGIT) {
             result.mapped_input = FixedPoint16(CORDICConfig::SOFTMAX_MIN_LOGIT);
         } else {
@@ -35,7 +34,6 @@ PreprocessResult CORDICPreprocessor::processInput(float input, bool enable_debug
     
     // PASO 2: Decidir si necesita mapeo
     if (std::abs(input) <= CORDICConfig::CONVERGENCE_LIMIT) {
-        // CASO A: Entrada ya en rango óptimo
         result.mapped_input = FixedPoint16(input);
         result.reduction_factor = 0;
         result.mapping_applied = false;
@@ -47,13 +45,11 @@ PreprocessResult CORDICPreprocessor::processInput(float input, bool enable_debug
             std::cout << "  No se requiere mapeo" << std::endl;
         }
     } else {
-        // CASO B: Aplicar mapeo exponencial
         if (enable_debug) {
             std::cout << "⚠ Entrada fuera del rango de convergencia" << std::endl;
             std::cout << "  Aplicando mapeo: e^x = 2^n × e^(x')" << std::endl;
         }
         
-        // Calcular factor de reducción
         int n = calculateReductionFactor(input);
         float x_mapped = input - n * CORDICConfig::LN2;
         
@@ -63,7 +59,6 @@ PreprocessResult CORDICPreprocessor::processInput(float input, bool enable_debug
                       << " × ln(2) = " << x_mapped << std::endl;
         }
         
-        // Ajuste fino
         x_mapped = applyFineAdjustment(x_mapped, n);
         
         result.mapped_input = FixedPoint16(x_mapped);
@@ -84,9 +79,9 @@ PreprocessResult CORDICPreprocessor::processInput(float input, bool enable_debug
 
 CORDICState CORDICPreprocessor::initializeCORDICState(const PreprocessResult& preprocess_result) {
     CORDICState state;
-    state.X = FixedPoint16(1.0f);    // Valor inicial normalizado
-    state.Y = FixedPoint16(0.0f);    // Inicia en cero
-    state.Z = preprocess_result.mapped_input;  // Ángulo mapeado
+    state.X = FixedPoint16(1.0f);
+    state.Y = FixedPoint16(0.0f);
+    state.Z = preprocess_result.mapped_input;
     state.iteration_count = 0;
     state.converged = false;
     
@@ -113,7 +108,6 @@ void CORDICPreprocessor::printPreprocessInfo(const PreprocessResult& result) {
 }
 
 int CORDICPreprocessor::calculateReductionFactor(float input) {
-    // n = round(x / ln(2)) optimizado como n = round(x × INV_LN2)
     return static_cast<int>(std::round(input * CORDICConfig::INV_LN2));
 }
 
@@ -121,13 +115,11 @@ float CORDICPreprocessor::applyFineAdjustment(float mapped_input, int& reduction
     const float limit = CORDICConfig::CONVERGENCE_LIMIT;
     float adjusted_input = mapped_input;
     
-    // Ajustar hacia abajo si excede límite positivo
     while (adjusted_input > limit) {
         reduction_factor++;
         adjusted_input -= CORDICConfig::LN2;
     }
     
-    // Ajustar hacia arriba si excede límite negativo
     while (adjusted_input < -limit) {
         reduction_factor--;
         adjusted_input += CORDICConfig::LN2;
@@ -137,12 +129,10 @@ float CORDICPreprocessor::applyFineAdjustment(float mapped_input, int& reduction
 }
 
 bool CORDICPreprocessor::validateInput(float input) {
-    // Verificar NaN e infinitos
     if (std::isnan(input) || std::isinf(input)) {
         return false;
     }
     
-    // Rango práctico para softmax
     const float PRACTICAL_MIN = -15.0f;
     const float PRACTICAL_MAX = 15.0f;
     

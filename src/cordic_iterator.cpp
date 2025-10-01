@@ -3,7 +3,7 @@
  * @brief Implementación del iterador CORDIC
  */
 
-#include "../include/cordic_iterator.h"
+#include "cordic_iterator.h"
 #include <iostream>
 #include <iomanip>
 #include <cmath>
@@ -27,7 +27,7 @@ const AngleTableEntry& AngleTable::getEntry(int index) const {
     if (index < 1 || index > static_cast<int>(table.size())) {
         throw std::out_of_range("Angle table index out of range");
     }
-    return table[index - 1];  // Índice base 1
+    return table[index - 1];
 }
 
 bool AngleTable::hasIndex(int index) const {
@@ -54,7 +54,7 @@ void AngleTable::printTable() const {
 //==============================================================================
 
 CORDICIterator::CORDICIterator() {
-    // La tabla se construye automáticamente en el constructor de AngleTable
+    // La tabla se construye automáticamente
 }
 
 IterationResult CORDICIterator::performIterations(const CORDICState& initial_state, 
@@ -73,7 +73,6 @@ IterationResult CORDICIterator::performIterations(const CORDICState& initial_sta
     }
     
     for (int iter = 0; iter < CORDICConfig::MAX_ITERATIONS; iter++) {
-        // Verificar convergencia
         if (current_state.Z.hasConverged()) {
             if (enable_debug) {
                 std::cout << "✓ Convergencia alcanzada en iteración " << iter << std::endl;
@@ -83,19 +82,16 @@ IterationResult CORDICIterator::performIterations(const CORDICState& initial_sta
             break;
         }
         
-        // Selección greedy del ángulo óptimo
         int selected_angle_idx = selectGreedyAngle(current_state.Z);
         
         if (selected_angle_idx <= 0) {
             if (enable_debug) {
-                std::cout << "⚠ No se encontró ángulo válido, terminando" << std::endl;
+                std::cout << "⚠ No se encontró ángulo válido" << std::endl;
             }
             break;
         }
         
         result.selected_angles.push_back(selected_angle_idx);
-        
-        // Ejecutar rotación CORDIC
         CORDICState next_state = executeRotationStep(current_state, selected_angle_idx);
         
         if (enable_debug) {
@@ -115,32 +111,27 @@ IterationResult CORDICIterator::performIterations(const CORDICState& initial_sta
     result.final_state = current_state;
     
     if (!result.converged_successfully && enable_debug) {
-        std::cout << "⚠ Máximo de iteraciones alcanzado sin convergencia completa" << std::endl;
-        std::cout << "  Z_residual final: " << current_state.Z.toFloat() << std::endl;
+        std::cout << "⚠ Máximo de iteraciones alcanzado" << std::endl;
+        std::cout << "  Z_residual: " << current_state.Z.toFloat() << std::endl;
     }
     
     return result;
 }
 
 int CORDICIterator::selectGreedyAngle(const FixedPoint16& z_residual) {
-    // Verificar convergencia
     if (z_residual.hasConverged()) {
-        return 0;  // Señal de convergencia
+        return 0;
     }
     
-    // Trabajar con valor absoluto
     float abs_z = std::abs(z_residual.toFloat());
     
-    // ESTRATEGIA GREEDY: Encontrar el ángulo más grande que sea ≤ abs_z
-    // Búsqueda lineal (simple para implementación C++ de referencia)
     for (int i = 1; i <= angle_table.size(); i++) {
         const auto& entry = angle_table.getEntry(i);
-        if (entry.angle <= abs_z + 1e-6) {  // Pequeña tolerancia numérica
+        if (entry.angle <= abs_z + 1e-6) {
             return i;
         }
     }
     
-    // Si ningún ángulo es válido, usar el más pequeño
     return angle_table.size();
 }
 
@@ -149,32 +140,23 @@ CORDICState CORDICIterator::executeRotationStep(const CORDICState& current_state
     CORDICState next_state = current_state;
     
     if (!angle_table.hasIndex(angle_idx)) {
-        return next_state;  // Ángulo inválido, no cambiar estado
+        return next_state;
     }
     
     const auto& angle_entry = angle_table.getEntry(angle_idx);
-    
-    // Determinar dirección de rotación: s_n = sign(Z_n)
     int rotation_direction = (current_state.Z >= 0) ? 1 : -1;
     
-    // IMPLEMENTACIÓN DE LAS ECUACIONES CORDIC HIPERBÓLICAS:
-    // Los términos 2^(-k) se implementan como desplazamientos (shifts)
-    
-    // Calcular shifted values
     FixedPoint16 shifted_Y = current_state.Y >> angle_entry.shift_amount;
     FixedPoint16 shifted_X = current_state.X >> angle_entry.shift_amount;
     
-    // X_{n+1} = X_n + s_n × 2^(-k) × Y_n
     FixedPoint16 delta_X;
     delta_X.setRaw(rotation_direction * shifted_Y.getRaw());
     next_state.X = current_state.X + delta_X;
     
-    // Y_{n+1} = Y_n + s_n × 2^(-k) × X_n
     FixedPoint16 delta_Y;
     delta_Y.setRaw(rotation_direction * shifted_X.getRaw());
     next_state.Y = current_state.Y + delta_Y;
     
-    // Z_{n+1} = Z_n - s_n × α_k
     FixedPoint16 delta_Z;
     delta_Z.setRaw(rotation_direction * angle_entry.fixed_angle.getRaw());
     next_state.Z = current_state.Z - delta_Z;
