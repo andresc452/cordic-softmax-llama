@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.15)
 project(cordic_softmax_llama 
-    VERSION 0.1.0
+    VERSION 1.0.0
     DESCRIPTION "CORDIC Softmax implementation for llama.cpp with FPGA acceleration"
     LANGUAGES CXX
 )
@@ -36,7 +36,7 @@ set(PROJECT_SOURCE_DIR_SRC "${PROJECT_SOURCE_DIR}/src")
 set(PROJECT_TEST_DIR "${PROJECT_SOURCE_DIR}/tests")
 
 # ============================================================================
-# LIBRERÍA CORDIC
+# LIBRERÍA CORDIC COMPLETA
 # ============================================================================
 
 set(CORDIC_HEADERS
@@ -44,12 +44,14 @@ set(CORDIC_HEADERS
     ${PROJECT_INCLUDE_DIR}/cordic_preprocessor.h
     ${PROJECT_INCLUDE_DIR}/cordic_iterator.h
     ${PROJECT_INCLUDE_DIR}/cordic_postprocessor.h
+    ${PROJECT_INCLUDE_DIR}/cordic_softmax.h
 )
 
 set(CORDIC_SOURCES
     ${PROJECT_SOURCE_DIR_SRC}/cordic_preprocessor.cpp
     ${PROJECT_SOURCE_DIR_SRC}/cordic_iterator.cpp
     ${PROJECT_SOURCE_DIR_SRC}/cordic_postprocessor.cpp
+    ${PROJECT_SOURCE_DIR_SRC}/cordic_softmax.cpp
 )
 
 # Verificar archivos
@@ -97,10 +99,14 @@ add_executable(test_iterator ${PROJECT_TEST_DIR}/test_iterator.cpp)
 target_link_libraries(test_iterator PRIVATE cordic_static)
 add_test(NAME test_iterator COMMAND test_iterator)
 
-# Test 4: Postprocessor (NUEVO)
 add_executable(test_postprocessor ${PROJECT_TEST_DIR}/test_postprocessor.cpp)
 target_link_libraries(test_postprocessor PRIVATE cordic_static)
 add_test(NAME test_postprocessor COMMAND test_postprocessor)
+
+# Test 5: Softmax API (NUEVO)
+add_executable(test_softmax ${PROJECT_TEST_DIR}/test_softmax.cpp)
+target_link_libraries(test_softmax PRIVATE cordic_static)
+add_test(NAME test_softmax COMMAND test_softmax)
 
 # ============================================================================
 # CUSTOM TARGETS
@@ -108,7 +114,7 @@ add_test(NAME test_postprocessor COMMAND test_postprocessor)
 
 add_custom_target(run_tests
     COMMAND ${CMAKE_CTEST_COMMAND} --output-on-failure
-    DEPENDS test_types test_preprocessor test_iterator test_postprocessor
+    DEPENDS test_types test_preprocessor test_iterator test_postprocessor test_softmax
     COMMENT "Running all tests..."
 )
 
