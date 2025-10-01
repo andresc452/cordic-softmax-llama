@@ -94,18 +94,19 @@ PostprocessResult CORDICPostprocessor::processResults(
 
 float CORDICPostprocessor::calculateScalingFactor(const std::vector<int>& selected_angles) {
     if (selected_angles.empty()) {
-        return 1.0f;  // Sin rotaciones, factor neutro
+        return 1.0f;
     }
     
+    // MÉTODO CORRECTO: Calcular K multiplicando cosh(α_i) 
+    // para CADA ángulo en la lista (incluyendo repeticiones)
     float K = 1.0f;
     
     for (int angle_idx : selected_angles) {
-        // Calcular ángulo α_k = arctanh(2^(-k))
         float tanh_val = std::pow(2.0f, -angle_idx);
         float angle = std::atanh(tanh_val);
+        float cosh_angle = std::cosh(angle);
         
-        // Multiplicar por cosh(α_k)
-        K *= std::cosh(angle);
+        K *= cosh_angle;
     }
     
     return K;
@@ -117,10 +118,6 @@ void CORDICPostprocessor::extractHyperbolicFunctions(
     float& cosh_result,
     float& sinh_result
 ) {
-    // Después de CORDIC:
-    // X_final ≈ K × cosh(x')
-    // Y_final ≈ K × sinh(x')
-    
     float x_final = final_state.X.toFloat();
     float y_final = final_state.Y.toFloat();
     
@@ -129,7 +126,6 @@ void CORDICPostprocessor::extractHyperbolicFunctions(
 }
 
 float CORDICPostprocessor::calculateExponential(float cosh_val, float sinh_val) {
-    // IDENTIDAD FUNDAMENTAL: e^x = cosh(x) + sinh(x)
     return cosh_val + sinh_val;
 }
 
@@ -138,11 +134,9 @@ float CORDICPostprocessor::restoreOriginalValue(
     const PreprocessResult& preprocess_result
 ) {
     if (!preprocess_result.mapping_applied) {
-        // Sin mapeo, el resultado es directo
         return exp_mapped;
     }
     
-    // Aplicar restauración exponencial: e^x = 2^n × e^(x')
     float power_of_2 = std::pow(2.0f, preprocess_result.reduction_factor);
     return exp_mapped * power_of_2;
 }
@@ -151,7 +145,7 @@ float CORDICPostprocessor::calculateError(float computed_value, float original_i
     float reference_value = std::exp(original_input);
     
     if (std::abs(reference_value) < 1e-10f) {
-        return std::abs(computed_value);  // Error absoluto cuando referencia ≈ 0
+        return std::abs(computed_value);
     }
     
     return std::abs(computed_value - reference_value) / std::abs(reference_value);
@@ -167,7 +161,6 @@ void CORDICPostprocessor::printPostprocessInfo(const PostprocessResult& result) 
     std::cout << "Error relativo: " << std::setprecision(6) 
               << (result.relative_error * 100) << "%" << std::endl;
     
-    // Clasificación de precisión
     if (result.relative_error < 0.001f) {
         std::cout << "Precisión: EXCELENTE (<0.1%)" << std::endl;
     } else if (result.relative_error < 0.01f) {
