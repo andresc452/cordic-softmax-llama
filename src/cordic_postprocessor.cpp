@@ -21,13 +21,25 @@ PostprocessResult CORDICPostprocessor::processResults(
                   << " iteraciones" << std::endl;
     }
     
-    // Usar K constante para CORDIC hiperbólico
-    result.scaling_factor = CORDICConfig::CORDIC_K_HYPERBOLIC;
+    // Calcular K usando la identidad hiperbólica
+    // Sabemos que cosh²(Z₀) - sinh²(Z₀) = 1
+    // Por tanto: (X_final/K)² - (Y_final/K)² = 1
+    // Entonces: X_final² - Y_final² = K²
+    // Por tanto: K = sqrt(X_final² - Y_final²)
+    
+    float x_final = iteration_result.final_state.X.toFloat();
+    float y_final = iteration_result.final_state.Y.toFloat();
+    
+    float K_squared = x_final * x_final - y_final * y_final;
+    result.scaling_factor = std::sqrt(std::abs(K_squared));
     
     if (enable_debug) {
-        std::cout << "\nPaso 1: Factor de escala K = " << result.scaling_factor 
-                  << " (constante CORDIC hiperbólico)" << std::endl;
-        std::cout << "Ángulos utilizados: [";
+        std::cout << "\nPaso 1: Factor de escala K calculado" << std::endl;
+        std::cout << "X_final = " << x_final << std::endl;
+        std::cout << "Y_final = " << y_final << std::endl;
+        std::cout << "K = sqrt(X² - Y²) = sqrt(" << x_final*x_final << " - " 
+                  << y_final*y_final << ") = " << result.scaling_factor << std::endl;
+        std::cout << "Ángulos utilizados (" << iteration_result.selected_angles.size() << "): [";
         for (size_t i = 0; i < iteration_result.selected_angles.size(); i++) {
             std::cout << iteration_result.selected_angles[i];
             if (i < iteration_result.selected_angles.size() - 1) std::cout << ", ";
@@ -35,7 +47,7 @@ PostprocessResult CORDICPostprocessor::processResults(
         std::cout << "]" << std::endl;
     }
     
-    // Paso 2: Extraer funciones hiperbólicas
+    // Extraer funciones hiperbólicas
     extractHyperbolicFunctions(
         iteration_result.final_state,
         result.scaling_factor,
@@ -45,9 +57,9 @@ PostprocessResult CORDICPostprocessor::processResults(
     
     if (enable_debug) {
         std::cout << "\nPaso 2: Funciones hiperbólicas extraídas" << std::endl;
-        std::cout << "cosh(x') = " << std::fixed << std::setprecision(8) 
+        std::cout << "cosh(x') = X / K = " << std::fixed << std::setprecision(8) 
                   << result.cosh_value << std::endl;
-        std::cout << "sinh(x') = " << result.sinh_value << std::endl;
+        std::cout << "sinh(x') = Y / K = " << result.sinh_value << std::endl;
         
         float identity_check = result.cosh_value * result.cosh_value - 
                               result.sinh_value * result.sinh_value;
@@ -55,7 +67,7 @@ PostprocessResult CORDICPostprocessor::processResults(
                   << " (debe ≈ 1.0)" << std::endl;
     }
     
-    // Paso 3: Calcular exponencial del valor mapeado
+    // Calcular exponencial
     float exp_mapped = calculateExponential(result.cosh_value, result.sinh_value);
     
     if (enable_debug) {
@@ -63,7 +75,7 @@ PostprocessResult CORDICPostprocessor::processResults(
         std::cout << "e^(x') = cosh + sinh = " << exp_mapped << std::endl;
     }
     
-    // Paso 4: Restaurar valor original
+    // Restaurar valor original
     result.exponential_value = restoreOriginalValue(exp_mapped, preprocess_result);
     
     if (enable_debug) {
@@ -76,7 +88,7 @@ PostprocessResult CORDICPostprocessor::processResults(
         }
     }
     
-    // Paso 5: Calcular error
+    // Calcular error
     result.relative_error = calculateError(result.exponential_value, 
                                           preprocess_result.original_input);
     
@@ -92,10 +104,9 @@ PostprocessResult CORDICPostprocessor::processResults(
     return result;
 }
 
-float CORDICPostprocessor::calculateScalingFactor(const std::vector<int>& selected_angles) {
-    // Esta función ya no se usa, mantenida por compatibilidad
-    (void)selected_angles;  // Suprimir warning
-    return CORDICConfig::CORDIC_K_HYPERBOLIC;
+float CORDICPostprocessor::calculateScalingFactor(const std::vector<int>&) {
+    // Ya no se usa, se calcula directamente en processResults
+    return 1.0f;
 }
 
 void CORDICPostprocessor::extractHyperbolicFunctions(
