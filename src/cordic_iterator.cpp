@@ -72,7 +72,10 @@ IterationResult CORDICIterator::performIterations(const CORDICState& initial_sta
         std::cout << std::string(80, '-') << std::endl;
     }
     
-    for (int iter = 0; iter < CORDICConfig::MAX_ITERATIONS; iter++) {
+    int iter = 0;
+    
+    // CORRECCIÓN: Iterar hasta MAX_ITERATIONS pero con repeticiones
+    while (iter < CORDICConfig::MAX_ITERATIONS * 2) {  // x2 para permitir repeticiones
         if (current_state.Z.hasConverged()) {
             if (enable_debug) {
                 std::cout << "✓ Convergencia alcanzada en iteración " << iter << std::endl;
@@ -104,8 +107,31 @@ IterationResult CORDICIterator::performIterations(const CORDICState& initial_sta
         }
         
         current_state = next_state;
-        current_state.iteration_count = iter + 1;
+        iter++;
         result.iterations_used++;
+        
+        // REGLA DE REPETICIÓN: índices k donde k = 4, 7, 10, 13, ... se repiten
+        // Fórmula: k >= 4 && (k-4) % 3 == 0
+        if (selected_angle_idx >= 4 && (selected_angle_idx - 4) % 3 == 0) {
+            // Repetir esta rotación
+            if (!current_state.Z.hasConverged() && iter < CORDICConfig::MAX_ITERATIONS * 2) {
+                result.selected_angles.push_back(selected_angle_idx);
+                next_state = executeRotationStep(current_state, selected_angle_idx);
+                
+                if (enable_debug) {
+                    const auto& angle_entry = angle_table.getEntry(selected_angle_idx);
+                    std::cout << iter << "\t" << selected_angle_idx << "*\t"  // * indica repetición
+                              << std::fixed << std::setprecision(6) << angle_entry.angle << "\t"
+                              << std::setprecision(6) << next_state.Z.toFloat() << "\t"
+                              << std::setprecision(6) << next_state.X.toFloat() << "\t"
+                              << std::setprecision(6) << next_state.Y.toFloat() << std::endl;
+                }
+                
+                current_state = next_state;
+                iter++;
+                result.iterations_used++;
+            }
+        }
     }
     
     result.final_state = current_state;
