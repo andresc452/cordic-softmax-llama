@@ -64,10 +64,14 @@ void testDetailedFlow() {
     CORDICState initial = CORDICPreprocessor::initializeCORDICState(prep);
     CORDICIterator iterator;
     IterationResult iter_result = iterator.performIterations(initial, true);
+    
+    // FIX: Usar el resultado para evitar warning
     PostprocessResult post_result = CORDICPostprocessor::processResults(
         iter_result, prep, true);
     
-    std::cout << "\n✓ Flujo detallado completado" << std::endl;
+    // Mostrar resultado final
+    std::cout << "\nResultado final: " << post_result.exponential_value << std::endl;
+    std::cout << "✓ Flujo detallado completado" << std::endl;
 }
 
 void testErrorAnalysis() {
