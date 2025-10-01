@@ -2,26 +2,47 @@
 
 Implementación optimizada de softmax usando algoritmo CORDIC para integración con llama.cpp y posterior aceleración en FPGA.
 
-## Estado del Proyecto
+## 🎯 Objetivo del Proyecto
 
-### Fase 1: Implementación CPU (EN PROGRESO)
-- [x] cordic_types.h - Tipos básicos y punto fijo
-- [ ] cordic_preprocessor.h/.cpp - Preprocesamiento
-- [ ] cordic_iterator.h/.cpp - Núcleo CORDIC
-- [ ] cordic_postprocessor.h/.cpp - Postprocesamiento
-- [ ] cordic_softmax.h/.cpp - API principal
+Reemplazar la función softmax de llama.cpp con una implementación CORDIC optimizada que:
+1. **Fase 1 (Actual):** Funcione en CPU como referencia
+2. **Fase 2:** Se sintetice con Vivado HLS  
+3. **Fase 3:** Se acelere en FPGA
+
+## 📊 Estado del Proyecto
+
+### ✅ Completado (Fase 1 - CPU)
+- [x] Sistema de build con CMake
+- [x] `cordic_types.h` - Tipos de datos y punto fijo Q3.12
+- [x] `cordic_preprocessor.h/.cpp` - Mapeo exponencial con ln(2)
+- [x] Tests automatizados con CTest
+- [x] Tests de tipos (passing ✓)
+- [x] Tests de preprocesador (passing ✓)
+
+### 🔄 En Progreso
+- [ ] `cordic_iterator.h/.cpp` - Algoritmo CORDIC con selección greedy
+- [ ] `cordic_postprocessor.h/.cpp` - Cálculo final de exponenciales
+- [ ] `cordic_softmax.h/.cpp` - API principal
+
+### ⏳ Pendiente
 - [ ] Integración con llama.cpp
-- [ ] Validación y benchmarks
+- [ ] Benchmarks CPU (vs std::exp)
+- [ ] Validación de precisión
+- [ ] Migración a Vivado HLS
+- [ ] Deployment en FPGA
 
-### Fase 2: Migración HLS (PENDIENTE)
-### Fase 3: Aceleración FPGA (PENDIENTE)
+## 🚀 Quick Start
 
-## Quick Start
+### Requisitos
+- CMake 3.15+
+- GCC 7+ o Clang 10+
+- C++17
+
+### Build Automático (Recomendado)
 ```bash
-# Clonar
-git clone https://github.com/tu-usuario/cordic-softmax-llama.git
+# Clonar repositorio
+git clone https://github.com/andresc452/cordic-softmax-llama.git
 cd cordic-softmax-llama
 
-# Test actual
-g++ -std=c++17 tests/test_types.cpp -o tests/test_types
-./tests/test_types
+# Build y test en un comando
+./build.sh Release
