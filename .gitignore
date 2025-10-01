@@ -1,0 +1,32 @@
+# Archivos compilados
+*.o
+*.a
+*.so
+*.out
+*.exe
+
+# Directorios de build
+bin/
+build/
+obj/
+
+# Resultados de tests
+results/
+*.csv
+*.log
+
+# IDEs
+.vscode/
+.idea/
+*.swp
+
+# OS específico
+.DS_Store
+Thumbs.db
+
+# Python
+__pycache__/
+*.pyc
+
+# Descarga de llama.cpp
+../llama.cpp/
